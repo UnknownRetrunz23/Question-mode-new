@@ -1,0 +1,101 @@
+-- 🎈 FLOATING PARTS
+-- Random floating parts appear in every room.
+
+local CurrentRooms = workspace:WaitForChild("CurrentRooms")
+
+local spawned = {}
+
+local function createFloatingParts(room)
+    if spawned[room] then return end
+    spawned[room] = true
+
+    -- Random amount: 2-6
+    local amount = math.random(2, 6)
+
+    -- Find the room's approximate center and size
+    local cf, size = room:GetBoundingBox()
+
+    for i = 1, amount do
+        local part = Instance.new("Part")
+        part.Name = "FloatingPart"
+        part.Size = Vector3.new(
+            math.random(5, 15) / 10,
+            math.random(5, 15) / 10,
+            math.random(5, 15) / 10
+        )
+
+        part.Shape = Enum.PartType.Block
+        part.Material = Enum.Material.SmoothPlastic
+        part.Color = Color3.fromRGB(
+            math.random(40, 255),
+            math.random(40, 255),
+            math.random(40, 255)
+        )
+
+        part.Anchored = true
+        part.CanCollide = false
+        part.CanTouch = false
+        part.CanQuery = false
+
+        -- Random position inside the room
+        local x = math.random(-math.floor(size.X * 0.35),
+                              math.floor(size.X * 0.35))
+
+        local y = math.random(3, math.max(4, math.floor(size.Y * 0.7)))
+
+        local z = math.random(-math.floor(size.Z * 0.35),
+                              math.floor(size.Z * 0.35))
+
+        part.Position = cf.Position + Vector3.new(x, y, z)
+
+        part.Parent = room
+
+        -- Random rotation
+        part.CFrame =
+            part.CFrame *
+            CFrame.Angles(
+                math.rad(math.random(0, 360)),
+                math.rad(math.random(0, 360)),
+                math.rad(math.random(0, 360))
+            )
+
+        -- Floating animation
+        task.spawn(function()
+            local startPosition = part.Position
+            local startTime = tick()
+
+            while part.Parent do
+                local elapsed = tick() - startTime
+
+                part.Position =
+                    startPosition +
+                    Vector3.new(
+                        math.sin(elapsed * 1.2 + i) * 1.5,
+                        math.sin(elapsed * 1.5 + i) * 1.2,
+                        math.cos(elapsed * 1.1 + i) * 1.5
+                    )
+
+                part.CFrame =
+                    CFrame.new(part.Position) *
+                    CFrame.Angles(
+                        elapsed * 0.7,
+                        elapsed * 0.9,
+                        elapsed * 0.5
+                    )
+
+                task.wait()
+            end
+        end)
+    end
+end
+
+-- Existing rooms
+for _, room in ipairs(CurrentRooms:GetChildren()) do
+    createFloatingParts(room)
+end
+
+-- New rooms
+CurrentRooms.ChildAdded:Connect(function(room)
+    task.wait(0.5)
+    createFloatingParts(room)
+end)
